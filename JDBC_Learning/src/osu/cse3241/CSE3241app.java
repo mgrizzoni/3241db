@@ -175,6 +175,78 @@ public class CSE3241app {
     	    try { if (conn != null) conn.close(); } catch (Exception e) {};
     	}
     }
+    
+    public static void selectAlbumsUnderCopies(Connection conn, int count) {
+    	String query = "SELECT Title, ContentID FROM Content WHERE NumCopies < ? "
+    			+ "AND Type = \'Album\'";
+		PreparedStatement stmt = null;
+    	ResultSet rs = null;
+    	try {
+    		stmt = conn.prepareStatement(query);
+    		stmt.setInt(1, count);
+    		rs = stmt.executeQuery();
+    		System.out.println("All albums with fewer than " + count + " copies:");
+    		while(rs.next()) {
+    			String title = rs.getString("Title");
+    			int id = rs.getInt("ContentID");
+    			System.out.println(id + ": " + title);
+    		}
+    	} catch(SQLException e) {
+    		System.out.println(e.getMessage());
+    	} finally {
+    		try { if (rs != null) rs.close(); } catch (Exception e) {};
+    	    try { if (stmt != null) stmt.close(); } catch (Exception e) {};
+    	    try { if (conn != null) conn.close(); } catch (Exception e) {};
+    	}
+    }
+    
+    public static void countAlbumsCheckedOut(Connection conn, int guestID) {
+    	String query = "SELECT COUNT(Title) AS total FROM Content, ChecksOut WHERE "
+    			+ "Type = \'Album\' AND GuestID = ? AND ContentID = CheckedOutID";
+		PreparedStatement stmt = null;
+    	ResultSet rs = null;
+    	try {
+    		stmt = conn.prepareStatement(query);
+    		stmt.setInt(1, guestID);
+    		rs = stmt.executeQuery();
+    		System.out.println("Number of albums checked out by patron " + guestID + ":");
+    		while(rs.next()) {
+    			String total = rs.getString("Total");
+    			System.out.println(total);
+    		}
+    	} catch(SQLException e) {
+    		System.out.println(e.getMessage());
+    	} finally {
+    		try { if (rs != null) rs.close(); } catch (Exception e) {};
+    	    try { if (stmt != null) stmt.close(); } catch (Exception e) {};
+    	    try { if (conn != null) conn.close(); } catch (Exception e) {};
+    	}
+    }
+    
+    public static void insertAudiobook(Connection conn, int contentID, Date releaseDate, String title, String type, int numCopies, String genre, int chapterCount, String isbn) {
+    	String query = "INSERT INTO Content (ContentID, CheckedOut, ReleaseDate, "
+    			+ "Title, Kind, Type, NumCopies, Genre, ChapterCount, ISBN) "
+    			+ "VALUES (?, 0, ?, ?, \'Audiobook\', ?, ?, ?, ?, ?)";
+		PreparedStatement stmt = null;
+    	try {
+    		stmt = conn.prepareStatement(query);
+    		stmt.setInt(1, contentID);
+    		stmt.setDate(2, releaseDate);
+    		stmt.setString(3, title);
+    		stmt.setString(4, type);
+    		stmt.setInt(5, numCopies);
+    		stmt.setString(6, genre);
+    		stmt.setInt(7, chapterCount);
+    		stmt.setString(8, isbn);
+    		stmt.execute();
+    		System.out.println("Successfully added to database.");
+    	} catch(SQLException e) {
+    		System.out.println(e.getMessage());
+    	} finally {
+    	    try { if (stmt != null) stmt.close(); } catch (Exception e) {};
+    	    try { if (conn != null) conn.close(); } catch (Exception e) {};
+    	}
+    }
 
     public static void main(String[] args) {
     	Connection conn = initializeDB(DATABASE);
