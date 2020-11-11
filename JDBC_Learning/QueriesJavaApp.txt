@@ -1,0 +1,49 @@
+1.
+SELECT	Title
+FROM	Content, Writes, Owns
+WHERE	ReleaseDate < YEAR
+	AND ContentID = TrackID
+	AND CompilerID = ARTISTID
+	AND OriginalAlbumID = AlbumID
+	AND Kind = 'Track'
+
+2.
+SELECT	ContentID, Title
+FROM	Content
+WHERE	NumCopies < 2
+	AND Kind = 'Album'
+
+3.
+SELECT	COUNT(Title) AS total
+FROM	Content, ChecksOut
+WHERE	Kind = 'Album'
+	AND GuestID = PATRONID
+	AND CheckedOutID = ContentID
+
+4.
+INSERT INTO Content 
+	(ContentID, CheckedOut, ReleaseDate, Title, Kind, Type, NumCopies, Genre,
+	ChapterCount, ISBN) VALUES (?, 0, ?, ?, 'Audiobook', ?, ?, ?, ?, ?)
+
+5.
+SELECT	Title
+FROM	Content, ChecksOut
+WHERE	GuestID = PATRONID
+	AND Kind = 'Movie'
+
+6.
+SELECT	Name, Title
+FROM	Person, Content, ChecksOut, Acts
+WHERE	MovieID = ContentID
+	AND ActorId = ACTORID
+	AND Kind = 'Movie'
+	AND GuestID = PersonID
+	AND ContentID = CheckedOutID
+
+7.
+SELECT MAX(Title) as maximum, GuestID
+FROM	(SELECT	COUNT(Title), GuestID
+	FROM	Content, ChecksOut
+	WHERE	Kind = 'Movie'
+		AND CheckedOutID = ContentID)
+	GROUP BY GuestID

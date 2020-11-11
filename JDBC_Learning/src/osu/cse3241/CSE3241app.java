@@ -204,7 +204,7 @@ public class CSE3241app {
     
     public static void countAlbumsCheckedOut(Connection conn, int guestID) {
     	String query = "SELECT COUNT(Title) AS total FROM Content, ChecksOut WHERE "
-    			+ "Type = \'Album\' AND GuestID = ? AND ContentID = CheckedOutID";
+    			+ "Kind = \'Album\' AND GuestID = ? AND ContentID = CheckedOutID";
 		PreparedStatement stmt = null;
     	ResultSet rs = null;
     	try {
@@ -301,8 +301,8 @@ public class CSE3241app {
     public static void getMostCheckedOutMovie(Connection conn) {
     	String query = "SELECT MAX(count) as maximum, GuestID FROM "
     			+ "(SELECT COUNT(Title) as count, GuestID FROM Content, "
-    			+ "ChecksOut WHERE Kind = 'Movie' AND CheckedOutID = ContentID "
-    			+ "GROUP BY GuestID);";
+    			+ "ChecksOut WHERE Kind = 'Movie' AND CheckedOutID = ContentID) "
+    			+ "GROUP BY GuestID";
 		PreparedStatement stmt = null;
     	ResultSet rs = null;
     	try {
