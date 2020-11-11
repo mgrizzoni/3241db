@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Scanner;
 
 /**
  * <h1>CSE3241 Introduction to Database Systems - Sample Java application.</h1>
@@ -152,17 +153,18 @@ public class CSE3241app {
      * @param year
      * 	the date object to limit the search
      */
-    public static void selectTracksBeforeYear(Connection conn, String artist, Date year) {
-    	String query = "SELECT Title FROM Content, Writes WHERE ReleaseDate < ? "
-				+ "AND ContentID = ProductID AND WriterID = ? AND Type = \'Track\'";
+    public static void selectTracksBeforeYear(Connection conn, int artist, String year) {
+    	String query = "SELECT Title FROM Content, Owns, Contains WHERE ReleaseDate < ? "
+				+ "AND OriginalAlbumID = AlbumID AND CompilerID = ? AND TrackID = ContentID "
+				+ "AND Kind = \'Track\'";
 		PreparedStatement stmt = null;
     	ResultSet rs = null;
     	try {
     		stmt = conn.prepareStatement(query);
-    		stmt.setString(1, artist);
-    		stmt.setDate(2, year);
+    		stmt.setInt(2, artist);
+    		stmt.setString(1, year);
     		rs = stmt.executeQuery();
-    		System.out.println("All titles by " + artist + " before " + year.toString() + ":");
+    		System.out.println("All titles by artist #" + artist + " before " + year + ":");
     		while(rs.next()) {
     			String title = rs.getString("Title");
     			System.out.println(title);
@@ -178,7 +180,7 @@ public class CSE3241app {
     
     public static void selectAlbumsUnderCopies(Connection conn, int count) {
     	String query = "SELECT Title, ContentID FROM Content WHERE NumCopies < ? "
-    			+ "AND Type = \'Album\'";
+    			+ "AND Kind = \'Album\'";
 		PreparedStatement stmt = null;
     	ResultSet rs = null;
     	try {
@@ -247,9 +249,119 @@ public class CSE3241app {
     	    try { if (conn != null) conn.close(); } catch (Exception e) {};
     	}
     }
+    
+    public static void getMoviesCheckedOut(Connection conn, int guestID) {
+    	String query = "SELECT Title FROM Content, ChecksOut WHERE "
+    			+ "Kind = \'Movie\' AND GuestID = ? AND ContentID = CheckedOutID";
+		PreparedStatement stmt = null;
+    	ResultSet rs = null;
+    	try {
+    		stmt = conn.prepareStatement(query);
+    		stmt.setInt(1, guestID);
+    		rs = stmt.executeQuery();
+    		System.out.println("Titles of movies checked out by patron " + guestID + ":");
+    		while(rs.next()) {
+    			String title = rs.getString("Title");
+    			System.out.println(title);
+    		}
+    	} catch(SQLException e) {
+    		System.out.println(e.getMessage());
+    	} finally {
+    		try { if (rs != null) rs.close(); } catch (Exception e) {};
+    	    try { if (stmt != null) stmt.close(); } catch (Exception e) {};
+    	    try { if (conn != null) conn.close(); } catch (Exception e) {};
+    	}
+    }
+    
+    public static void getCheckoutsOfMoviesByActor(Connection conn, int actorID) {
+    	String query = "SELECT Name, Title FROM Content, ChecksOut, Person, Acts WHERE "
+    			+ "Kind = \'Movie\' AND GuestID = PersonID AND ContentID = CheckedOutID AND MovieID = ContentID"
+    			+ " AND ActorID = ?";
+		PreparedStatement stmt = null;
+    	ResultSet rs = null;
+    	try {
+    		stmt = conn.prepareStatement(query);
+    		stmt.setInt(1, actorID);
+    		rs = stmt.executeQuery();
+    		System.out.println("Titles of movies checked out of actor " + actorID + ":");
+    		while(rs.next()) {
+    			String title = rs.getString("Title");
+    			String name = rs.getString("Name");
+    			System.out.println(name + " checked out " + title);
+    		}
+    	} catch(SQLException e) {
+    		System.out.println(e.getMessage());
+    	} finally {
+    		try { if (rs != null) rs.close(); } catch (Exception e) {};
+    	    try { if (stmt != null) stmt.close(); } catch (Exception e) {};
+    	    try { if (conn != null) conn.close(); } catch (Exception e) {};
+    	}
+    }
+    
+    public static void getMostCheckedOutMovie(Connection conn) {
+    	String query = "SELECT MAX(count) as maximum, GuestID FROM "
+    			+ "(SELECT COUNT(Title) as count, GuestID FROM Content, "
+    			+ "ChecksOut WHERE Kind = 'Movie' AND CheckedOutID = ContentID "
+    			+ "GROUP BY GuestID);";
+		PreparedStatement stmt = null;
+    	ResultSet rs = null;
+    	try {
+    		stmt = conn.prepareStatement(query);
+    		rs = stmt.executeQuery();
+    		System.out.println("Most checked out movie: ");
+    		while(rs.next()) {
+    			String max = rs.getString("maximum");
+    			int guest = rs.getInt("GuestID");
+    			System.out.println("guest #" + guest + " checked out " + max + " movie(s)");
+    		}
+    	} catch(SQLException e) {
+    		System.out.println(e.getMessage());
+    	} finally {
+    		try { if (rs != null) rs.close(); } catch (Exception e) {};
+    	    try { if (stmt != null) stmt.close(); } catch (Exception e) {};
+    	    try { if (conn != null) conn.close(); } catch (Exception e) {};
+    	}
+    }
 
     public static void main(String[] args) {
     	Connection conn = initializeDB(DATABASE);
-    	sqlQuery(conn, sqlStatement);
+    	
+    	Scanner input = new Scanner(System.in);
+    
+    	System.out.println("Select a query, then press enter:"
+    				+ "\n1: Find the titles of all tracks by Kendrick Lamar released before 2020"
+    				+ "\n2: List all the albums and their unique identifiers with less than 3 copies held by the library"
+    				+ "\n3: Find the total number of albums checked out by a single patron"
+    				+ "\n4: Insert an audiobook"
+    				+ "\n5: Get the titles of all movies checked out by a patron"
+    				+ "\n6: Get the names of all patrons and the titles of all movies they checked out by a certain actor"
+    				+ "\n7: Get the number of movies rented by the patron with the most movies checked out");
+    	String response = input.nextLine();
+    	switch(response) {
+    		case "1": 
+    			selectTracksBeforeYear(conn, 1, "2020-01-01");
+    			break;
+    		case "2":
+    			selectAlbumsUnderCopies(conn, 3);
+    			break;
+    		case "3":
+    			countAlbumsCheckedOut(conn, 21);
+    			break;
+    		case "4":
+    			insertAudiobook(conn, 21, new Date(1577854800000L), "The Chronicles of Narnia", "Digital", 2, "Fantasy", 14, "123-45x-543");
+    			break;
+    		case "5":
+    			getMoviesCheckedOut(conn, 1);
+    			break;
+    		case "6":
+    			getCheckoutsOfMoviesByActor(conn, 5);
+    			break;
+    		case "7":
+    			getMostCheckedOutMovie(conn);
+    			break;
+    		default:
+    			break;
+    	}
+    	input.close();
     }
 }
